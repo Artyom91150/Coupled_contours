@@ -1,0 +1,142 @@
+Output_properties:
+  Output_path_folder: "Results"
+  Data_file_name: "SolveODE_Data.jld"
+  Data_postprocessing:
+    - file_name: "Output.txt"
+      func_name: "GetSync"
+    - file_name: "Output.txt"
+      func_name: "GetPeriod"
+    - file_name: "Period.pdf"
+      func_name: "plotPeriod"
+    - file_name: "TS_1.pdf"
+      kwargs:
+        linewidth: 3
+      func_name: "plotTimeSeries"
+      varNames:
+        - "\\phi_1"
+        - "\\phi_2"
+        - "\\phi_3"
+        - "\\psi_1"
+        - "\\psi_2"
+        - "\\psi_3"
+      projFunc: "projHalfSin"
+      title: "Time series"
+    - file_name: "P_1.pdf"
+      varPairs:
+        -
+          -
+            - 0
+            - 1
+          -
+            - 0
+            - 2
+          -
+            - 1
+            - 2
+        -
+          -
+            - 3
+            - 4
+          -
+            - 3
+            - 5
+          -
+            - 4
+            - 5
+        -
+          -
+            - 0
+            - 3
+          -
+            - 0
+            - 4
+          -
+            - 0
+            - 5
+        -
+          -
+            - 1
+            - 3
+          -
+            - 1
+            - 4
+          -
+            - 1
+            - 5
+        -
+          -
+            - 2
+            - 3
+          -
+            - 2
+            - 4
+          -
+            - 2
+            - 5
+      showEvents: true
+      func_name: "plotPoincare"
+      varNames:
+        - "\\phi_1"
+        - "\\phi_2"
+        - "\\phi_3"
+        - "\\psi_1"
+        - "\\psi_2"
+        - "\\psi_3"
+      projFunc: "projHalfSin"
+      title: "Poincare & Projections"
+    - file_name: "RT_1.pdf"
+      proj: "normDefault"
+      kwargs:
+        s: 3
+      func_name: "plotReturnTime"
+      title: "Return time"
+    - file_name: "AD_1.pdf"
+      func_name: "plotActivationDiagram"
+      varNames:
+        - "\\phi_1"
+        - "\\phi_2"
+        - "\\phi_3"
+        - "\\psi_1"
+        - "\\psi_2"
+        - "\\psi_3"
+      title: "Activation diagram"
+ODESystem_setings:
+  ODESolver_settings:
+    init_cond:
+      - 2.941592653589793
+      - 0.2
+      - 0.4
+      - 2.941592653589793
+      - 0.4
+      - 0.2
+    trans_time: 1000.0
+    time_span: 100.0
+    callback: "x -> sin(x[1] - 0.25)"
+    kwargs:
+      reltol: 1.0e-13
+      maxiters: 1.0e10
+      abstol: 1.0e-13
+      dt: 0.1
+    alg: "DP8()"
+  ODE_file_path: "ODEs\\BS_Uni_System.jl"
+  ODE_func_name: "Get_Uni_Sys"
+  Parameters:
+    - name: "K"
+      Lname: "K"
+      value: 1.5789473684210527
+    - name: "r"
+      Lname: "r"
+      value: 0.39473684210526316
+    - name: "a2"
+      Lname: "\\alpha_2"
+      value: "pi/2"
+    - name: "a4"
+      Lname: "\\alpha_4"
+      value: 3.24685581148453
+    - name: "Eps"
+      Lname: "\\varepsilon"
+      value: 1.0e-7
+  Support_properties:
+    Couple_func: "x -> 1 - cos(x)"
+Task_file: "Tasks\\SolveODE_Task.jl"
+Task_name: "SolveODE"

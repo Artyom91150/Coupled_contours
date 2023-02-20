@@ -1,0 +1,4 @@
+#### 	 Sync's: 	 #### 
+Dict{Any, Any}("phi2" => Dict{String, Real}("psi" => 2, "delay" => π, "std" => 1.0767325465315312), "phi3" => Dict{String, Real}("psi" => 2, "delay" => π, "std" => 0.9782805059933853), "phi1" => Dict{String, Real}("psi" => 3, "delay" => π, "std" => 0.9786287327905155))
+#### 	 Period: 	 #### 
+75.73175362022374

@@ -1,0 +1,158 @@
+Session_name : "Some_Tasks"
+Session_folder : "Results"
+
+Session_Input : 
+  Reuired_modules : 
+    - "Tasks\\BS_ODE_Tasks.jl"
+    - "Tasks\\ODE_Visualization_Tasks.jl"
+
+  Tasks_List :
+  - Task_Func : "SolveODE"
+    Task_File : ~
+
+    Task_Input : 
+      ODESystem_setings :
+        # ODE System file location & Name of ODE function in curent module
+        ODE_file_path : "ODEs\\BS_Uni_System.jl"
+        ODE_func_name : "Get_Uni_Sys"
+
+        # List of ODE System parameters
+        ODE_Parameters: &ODE_Parameters
+          - name : "K"
+            value : 1.5789473684210527
+            Lname : "K"
+            
+          - name : "r"
+            value : 0.39473684210526316
+            Lname : "r"
+            
+          - name : "a2"
+            value : pi/2
+            Lname : "\\alpha_2"
+            
+          - name : "a4"
+            value : 3.24685581148453
+            Lname : "\\alpha_4"
+            
+          - name : "Eps"
+            value : 1e-7
+            Lname : "\\varepsilon"
+
+        # Other support properties of ODE System
+        Support_properties:
+          Couple_func : &Couple_func "x -> 1 - cos(x)"
+
+      # ODE solver settings
+      ODESolver_settings:
+          time_span : 100.0
+          trans_time : 100.0
+          callback : "x -> sin(x[1] - 0.25)"
+          alg : DP8()
+          init_cond : [2.941592653589793, 3.6, 3.8, 2.941592653589793, 0.4, 0.2]
+
+          kwargs : &ODE_Kwargs
+            dt : 1e-1
+            abstol : 1e-13
+            reltol : 1e-13
+            maxiters : 1e10
+
+    Task_Output :
+      # File name with task results
+      Data_file_name : &ODE_solution_file "SolveODE_Data.jld2"
+
+  - Task_Func : "plotTimeSeries"
+    Task_File : ~
+    Task_Input :
+      Data_file_name : *ODE_solution_file
+      projFunc : "projHalfSin"
+      title : "Time series"
+      varNames : ["\\phi_1", "\\phi_2", "\\phi_3", "\\psi_1", "\\psi_2", "\\psi_3"]
+      kwargs : 
+        linewidth : 3
+    Task_Output : "TS_1.pdf"
+
+  - Task_Func : "plotPoincare"
+    Task_File : ~
+    Task_Input :
+      Data_file_name : *ODE_solution_file
+      varPairs : [[[0, 1], [0, 2], [1, 2]],
+                  [[3, 4], [3, 5], [4, 5]],
+                  [[0, 3], [0, 4], [0, 5]],
+                  [[1, 3], [1, 4], [1, 5]],
+                  [[2, 3], [2, 4], [2, 5]]]
+      projFunc : "projHalfSin"
+      title : "Poincare & Projections"
+      showEvents : True
+      varNames : ["\\phi_1", "\\phi_2", "\\phi_3", "\\psi_1", "\\psi_2", "\\psi_3"]
+    Task_Output : "P_1.pdf"
+
+  - Task_Func : "plotReturnTime"
+    Task_File : ~
+    Task_Input : 
+      Data_file_name : *ODE_solution_file
+      proj : normDefault
+      title : "Return time"
+      kwargs : 
+        s : 3
+    Task_Output : "RT_1.pdf"
+
+  - Task_Func : "plotActivationDiagram"
+    Task_File : ~
+    Task_Input :
+      Data_file_name : *ODE_solution_file
+      varNames : ["\\phi_1", "\\phi_2", "\\phi_3", "\\psi_1", "\\psi_2", "\\psi_3"]
+      title : "Activation diagram"
+    Task_Output : "AD_1.pdf"
+
+  - Task_Func : "BS_Sync"
+    Task_File : ~
+    Task_Input :
+      Data_file_name : *ODE_solution_file
+    Task_Output : &Sync "Sync.yaml"
+
+  - Task_Func : "GetPeriod"
+    Task_File :
+    Task_Input :  
+      Data_file_name : *ODE_solution_file
+    Task_Output : &Period "Period.jld2"
+
+  - Task_Func : "plotPeriod"
+    Task_File : ~
+    Task_Input :
+      Data_file_name : *ODE_solution_file
+    Task_Output : "Period.pdf"
+
+  - Task_Func : "SolveTanODE"
+    Task_File : ~
+    Task_Input :
+      ODESystem_setings :
+        # ODE System file location & Name of ODE function in curent module
+        ODE_file_path : "ODEs\\BS_Uni_System.jl"
+        ODE_func_name : "Get_Reduced_Sys"
+        Tan_func_name : "Get_Tan_Red_Sys"
+
+        # List of ODE System parameters
+        ODE_Parameters: *ODE_Parameters
+
+        # Other support properties of ODE System
+        Support_properties:
+          Couple_func : *Couple_func
+          Syncs : *Sync
+
+      # ODE solver settings
+      ODESolver_settings:
+          time_span : *Period
+          trans_time : 0.0
+          alg : DP8()
+          u0 : *ODE_solution_file #[2.8919089345436078e-12, 3.326895771572758, 3.1415926535907843]
+          Q0 : [1.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                0.0, 1.0, 0.0, 0.0, 0.0, 0.0,
+                0.0, 0.0, 1.0, 0.0, 0.0, 0.0,
+                0.0, 0.0, 0.0, 1.0, 0.0, 0.0,
+                0.0, 0.0, 0.0, 0.0, 1.0, 0.0,
+                0.0, 0.0, 0.0, 0.0, 0.0, 1.0]
+
+          kwargs : *ODE_Kwargs
+    Task_Output : "TanODE_Results.yaml"
+
+Session_Output : "Output.txt"

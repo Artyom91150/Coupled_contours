@@ -1,0 +1,38 @@
+Output_properties:
+  Requested_plots: []
+  Output_path_folder: "Results"
+  Data_file_name: "SolveTanODE_Data.jld"
+  Text_file_name: "SolveTanODE_Text.txt"
+ODESystem_setings:
+  ODESolver_settings:
+    trans_time: 0.0
+    time_span: 6.283185307179586
+    Q0:
+      - 1.0
+      - 0.0
+      - 0.0
+      - 1.0
+    kwargs:
+      reltol: 1.0e-13
+      maxiters: 1.0e10
+      abstol: 1.0e-13
+      dt: 0.1
+    u0:
+      - 1.0
+      - 0.0
+    alg: "DP8()"
+  ODE_file_path: "ODEs\\SL_System.jl"
+  ODE_func_name: "Get_SL_Sys"
+  Parameters:
+    - name: "r"
+      Lname: "r"
+      value: 1.0
+    - name: "omega"
+      Lname: "\\omega"
+      value: 1.0
+    - name: "s"
+      Lname: "s"
+      value: 0.25
+  Tan_func_name: "Get_SL_Tan"
+Task_file: "Tasks\\SL_test_Task.jl"
+Task_name: "SolveTanODE_SL"

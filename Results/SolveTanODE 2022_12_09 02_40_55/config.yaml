@@ -1,0 +1,89 @@
+Output_properties:
+  Requested_plots: []
+  Output_path_folder: "Results"
+  Data_file_name: "SolveTanODE_Data.jld"
+  Text_file_name: "SolveTanODE_Text.txt"
+ODESystem_setings:
+  ODESolver_settings:
+    trans_time: 1000.0
+    time_span: 75.73175362022374
+    Q0:
+      - 1.0
+      - 0.0
+      - 0.0
+      - 0.0
+      - 0.0
+      - 0.0
+      - 0.0
+      - 1.0
+      - 0.0
+      - 0.0
+      - 0.0
+      - 0.0
+      - 0.0
+      - 0.0
+      - 1.0
+      - 0.0
+      - 0.0
+      - 0.0
+      - 0.0
+      - 0.0
+      - 0.0
+      - 1.0
+      - 0.0
+      - 0.0
+      - 0.0
+      - 0.0
+      - 0.0
+      - 0.0
+      - 1.0
+      - 0.0
+      - 0.0
+      - 0.0
+      - 0.0
+      - 0.0
+      - 0.0
+      - 1.0
+    kwargs:
+      reltol: 1.0e-13
+      maxiters: 1.0e10
+      abstol: 1.0e-13
+      dt: 0.001
+    u0:
+      - 2.8919089345436078e-12
+      - 3.326895771572758
+      - 3.1415926535907843
+    alg: "DP8()"
+  ODE_file_path: "ODEs\\BS_Uni_System.jl"
+  ODE_func_name: "Get_Reduced_Sys"
+  Parameters:
+    - name: "K"
+      Lname: "K"
+      value: 1.5789473684210527
+    - name: "r"
+      Lname: "r"
+      value: 0.39473684210526316
+    - name: "a2"
+      Lname: "\\alpha_2"
+      value: "pi/2"
+    - name: "a4"
+      Lname: "\\alpha_4"
+      value: 3.24685581148453
+    - name: "Eps"
+      Lname: "\\varepsilon"
+      value: 1.0e-7
+  Support_properties:
+    Couple_func: "x -> 1 - cos(x)"
+    Syncs:
+      phi2:
+        psi: 1
+        delay: 3.1415
+      phi3:
+        psi: 3
+        delay: 3.1415
+      phi1:
+        psi: 2
+        delay: 3.1415
+  Tan_func_name: "Get_Tan_Red_Sys"
+Task_file: "Tasks\\SolveTanODE_Task.jl"
+Task_name: "SolveTanODE"
