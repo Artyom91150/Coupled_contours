@@ -163,7 +163,7 @@ class ColorActivation:
 
 
 def plotActivationDiagram(sol, varNames = None, colorizer = None, title = None, savePath = None):
-    if varNames == None : varNames = [f"y_{p}" for p in range(1, len(sol.y) + 1)]
+    if varNames == None : varNames = [f"y_{{{p}}}" for p in range(1, len(sol.y) + 1)]
     if colorizer == None : colorizer = ColorActivation([(0, 0, 0), (0.5, 0.5, 0.5), (1, 1, 1)], normValue)
     if title == None : title = r"$\bf{Диаграмма~активности}$"
 
