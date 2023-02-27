@@ -1,8 +1,5 @@
-import matplotlib as mpl
 import matplotlib.pyplot as plt
-import matplotlib.gridspec as gridspec
 import matplotlib.colors as mpc
-import matplotlib.cm as cm
 import numpy as np
 
 #############################################################################

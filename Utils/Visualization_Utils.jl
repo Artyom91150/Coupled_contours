@@ -1,7 +1,7 @@
 using PyCall
 
 pushfirst!(PyVector(pyimport("sys")."path"), "")
-MU = pyimport("Utils.Matplotlib_Utils")
+MU = pyimport("Utils.Graphics_Utils")
 
 function plotTimeSeries(sol; plot_properties = Dict(), Folder_path::String = "", plot_Name::String = "TimeSeries")
     projFunc = haskey(plot_properties, "projFunc") ? MU[plot_properties["projFunc"]] : nothing

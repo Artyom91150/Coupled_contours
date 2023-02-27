@@ -77,8 +77,7 @@ mutable struct TangentODE <: ODEType
         new(ODE, Jacobian, ODEDim, ODEDim)
     end
     function TangentODE(ODE::Union{Function, ODEType}, custom_jacobian::Union{Function, ODEType}, ODEDim::Int, JacDim::Int)
-        Jacobian = z -> jacobian((y, x) -> custom_jacobian(y, x, [], 0), zeros(ODEDim), z)
-        new(ODE, Jacobian, ODEDim, JacDim)
+        new(ODE, custom_jacobian, ODEDim, JacDim)
     end
 end
 

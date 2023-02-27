@@ -139,30 +139,6 @@ end
 
 
 
-##### Tangent Bick system #####
-struct BS_ODE_Tan <: ODEType
-    BS_ODE::BS_ODE_Duo
-    Syncs::BS_Syncs
-
-    function BS_ODE_Tan(p::Dict{String, T}, Couple::Union{String, Function}, Syncs::BS_Syncs) where T<:Real
-        new(BS_ODE_Duo(p, Couple), Syncs)
-    end
-end
-
-function Base.show(io::IO, bs::BS_ODE_Red)
-    println(io, "[BS_ODE::$(typeof(bs.BS_ODE))]:\n$(bs.BS_ODE)")
-end
-
-function (bs::BS_ODE_Tan)(dW, W, X)
-    Y = bs.Syncs(X)
-    dW = jacobian((y, x) -> bs.BS_ODE(y, x, [], 0), dW, [X; Y]) * W
-    return SVector{6}(dW)
-end
-
-
-
-
-
 
 
 
