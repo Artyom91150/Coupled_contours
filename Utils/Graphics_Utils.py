@@ -188,3 +188,29 @@ def plotActivationDiagram(sol, varNames = None, colorizer = None, title = None, 
     if savePath != None : fig.savefig(savePath)
 
     return fig
+
+def plotActivationDiagram_continuos(sol, varNames = None, cmap = None, title = None, savePath = None):
+    if varNames == None : varNames = [f"y_{{{p}}}" for p in range(1, len(sol.y) + 1)]
+    if cmap == None : cmap = plt.colormaps['Greys']
+    if title == None : title = r"$\bf{Диаграмма~активности}$"
+
+    solMat = np.array(sol.y)
+    clrdPlt = [[circleDist(y, 0.0) for y in s]for s in solMat]
+    plt.close()
+    fig = plt.figure(figsize=(15, 6))
+    N = len(varNames)
+    pcm = plt.pcolormesh(sol.t, range(N), clrdPlt, cmap=cmap, shading='nearest', vmin=0.0, vmax=np.pi)
+    cbar = fig.colorbar(pcm)
+    cbar.ax.tick_params(labelsize=12)
+    plt.gca().set_yticks(0.5 + np.arange(N))
+    plt.gca().set_yticklabels([projNone.label(var) for var in varNames], fontsize=14)
+
+    plt.gca().tick_params(which="major", width=1.0, labelsize=14)
+    plt.gca().tick_params(which="major", length=5, labelsize=14)
+    plt.xlabel(r'$t$', fontsize=14)
+
+    plt.title(title)
+    plt.tight_layout()
+    if savePath != None : fig.savefig(savePath)
+
+    return fig

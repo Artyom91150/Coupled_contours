@@ -46,3 +46,11 @@ function plotActivationDiagram(sol; plot_properties = Dict(), Folder_path::Strin
 
     MU.plotActivationDiagram(sol, varNames = varNames, savePath = savePath, title = title)
 end
+
+function plotActivationDiagram_continuos(sol; plot_properties = Dict(), Folder_path::String = "", plot_Name::String = "Activation Diagram")
+    varNames = haskey(plot_properties, "varNames") ? plot_properties["varNames"] : nothing
+    title = haskey(plot_properties, "title") ? plot_properties["title"] : nothing
+    savePath = Folder_path === "" ? nothing : Folder_path * "\\" * plot_Name
+
+    MU.plotActivationDiagram_continuos(sol, varNames = varNames, savePath = savePath, title = title)
+end
