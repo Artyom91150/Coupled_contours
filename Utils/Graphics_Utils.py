@@ -32,32 +32,44 @@ def projNone(X):
     return X
 projNone.label = lambda varName: r'${}$'.format(varName)
 
-def projLogSin(X):
+def projLogSin2(X):
     Y = [0] * len(X)
     for i in range(0, len(Y)):
         if np.sin(X[i]/2) > 0:
-            Y[i] = -np.log(1e-15 + 1 - np.sin(X[i]/2))
+            Y[i] = -np.log10(1e-15 + 1 - np.sin(X[i]/2))
         else:
-            Y[i] = np.log(1e-15 + 1 + np.sin(X[i]/2))
+            Y[i] = np.log10(1e-15 + 1 + np.sin(X[i]/2))
     return Y
-projLogSin.label = lambda varName: r'$\pm\log{{(1\pm\sin{{\frac{{{}}}{{2}}}})}}$'.format(varName)
+projLogSin2.label = lambda varName: r'$\pm\log{{(1\pm\sin{{\frac{{{}}}{{2}}}})}}$'.format(varName)
+
+def projLogCos(X):
+    Y = [0] * len(X)
+    for i in range(0, len(Y)):
+        if np.cos(X[i]) > 0:
+            Y[i] = -np.log10(1e-15 + 1 - np.cos(X[i]))
+        else:
+            Y[i] = np.log10(1e-15 + 1 + np.cos(X[i]))
+    return Y
+projLogCos.label = lambda varName: r'$\pm\log{{(1\pm\cos{{{{}}}})}}$'.format(varName)
 
 #############################################################################
 
-def plotTimeSeries(sol, savePath = None, varNames = None, projFunc = None, title = None, plotKwargs = None): 
+def plotTimeSeries(sol, fig = None, savePath = None, varNames = None, projFunc = None, title = None, plotKwargs = None): 
     if varNames == None : varNames = [f"y_{p}" for p in range(1, len(sol.y) + 1)]
     if projFunc == None : projFunc = projNone
     if title == None : title = r'$\bf{Временные ~диаграммы}$'
     if plotKwargs == None : plotKwargs = {}
 
-    fig, axes = plt.subplots(len(sol.y), 1, sharex = True, figsize = (6, len(sol.y)))
+    if fig == None : fig, axes = plt.subplots(len(sol.y), 1, sharex = True, sharey = True, figsize = (6, len(sol.y)))
+    else : axes = fig.subplots(len(sol.y), 1, sharex = True, sharey = True)
+
     for i in range(0, len(sol.y)):
         axes[i].plot(sol.t, projFunc(sol.y[i]), **plotKwargs)
         axes[i].set_ylabel(projFunc.label(varNames[i]), fontsize=16, rotation = 60)
     axes[-1].set_xlabel("t", fontsize=16)
 
     fig.suptitle(title)
-    plt.tight_layout()
+    #plt.tight_layout()
     if savePath != None : fig.savefig(savePath)
 
     return fig
@@ -65,7 +77,7 @@ def plotTimeSeries(sol, savePath = None, varNames = None, projFunc = None, title
 
 #############################################################################
 
-def plotPoincare(sol, varPairs, /, savePath = None, varNames = None, showEvents = False, projFunc = None, title = None, plotKwargs = None):
+def plotPoincare(sol, varPairs, /, fig = None, savePath = None, varNames = None, showEvents = False, projFunc = None, title = None, plotKwargs = None):
     if varNames == None : varNames = [f"y_{p}" for p in range(1, len(sol.y) + 1)]
     if projFunc == None : projFunc = projNone
     if title == None : title = r"$\bf{Отображения ~Пуанкаре}$"
@@ -75,7 +87,9 @@ def plotPoincare(sol, varPairs, /, savePath = None, varNames = None, showEvents 
     pairsCols = np.shape(varPairs)[1]
     figsizeScale = 2
     
-    fig, axes = plt.subplots(pairsRows, pairsCols, sharex = True, sharey = True, figsize = (figsizeScale * pairsCols + 1, figsizeScale * pairsRows))
+    if fig == None : fig, axes = plt.subplots(pairsRows, pairsCols, sharex = True, sharey = True, figsize = (figsizeScale * pairsCols + 1, figsizeScale * pairsRows))
+    else : axes = fig.subplots(pairsRows, pairsCols, sharex = True, sharey = True)
+
     if pairsRows == 1:
         axes = [axes]
 
@@ -91,7 +105,7 @@ def plotPoincare(sol, varPairs, /, savePath = None, varNames = None, showEvents 
             axes[i][j].set_aspect('equal')
 
     fig.suptitle(title)
-    plt.tight_layout()
+    #plt.tight_layout()
     if savePath != None : fig.savefig(savePath)
 
     return fig
@@ -109,22 +123,24 @@ normDefault.label = lambda varName: r'$||{}||$'.format(varName)
 normDefault.title = "Нормированные времена возврата"
 
 
-def plotReturnTime(sol, /, savePath = None, normFunc = None, title = None, plotKwargs = None):
+def plotReturnTime(sol, /, fig = None, savePath = None, normFunc = None, title = None, plotKwargs = None):
     if normFunc == None : normFunc = normDefault
     if title == None : title = r"$\bf{Времена ~возврата ~на ~секущую ~Пуанкаре}$"
     if plotKwargs == None : plotKwargs = {}
+
+    if fig == None : fig = plt.figure(figsize=(10, 4)); axes = fig.subplots()
+    else : axes = fig.subplots()
     
-    fig = plt.figure(figsize=(10, 4))
-    assert len(sol.t_events[0]) > 1, f"Not enough event points in plotReturnTime"
+    #assert len(sol.t_events[0]) > 1, f"Not enough event points in plotReturnTime"
 
-    t_diff = normFunc(sol.t_events[0][1:] - sol.t_events[0][0:-1])
-    plt.scatter(sol.t_events[0][: -1], t_diff, **plotKwargs)
+    if len(sol.t_events[0]) > 1:
+        t_diff = normFunc(sol.t_events[0][1:] - sol.t_events[0][0:-1])
+        axes.scatter(sol.t_events[0][: -1], t_diff, **plotKwargs)
 
-    plt.xlabel("$t$", fontsize=14)
-    plt.ylabel(normFunc.title, fontsize=14)
+    axes.set_xlabel("$t$", fontsize=14)
+    axes.set_ylabel(normFunc.title, fontsize=14)
 
-    plt.title(title)
-    plt.tight_layout()
+    axes.set_title(title)
     if savePath != None : fig.savefig(savePath)
 
     return fig
@@ -162,55 +178,62 @@ class ColorActivation:
         self.normFunc = normalizeFunc
 
 
-def plotActivationDiagram(sol, varNames = None, colorizer = None, title = None, savePath = None):
+def plotActivationDiagram(sol, fig = None, varNames = None, colorizer = None, title = None, savePath = None):
     if varNames == None : varNames = [f"y_{{{p}}}" for p in range(1, len(sol.y) + 1)]
     if colorizer == None : colorizer = ColorActivation([(0, 0, 0), (0.5, 0.5, 0.5), (1, 1, 1)], normValue)
     if title == None : title = r"$\bf{Диаграмма~активности}$"
 
     solMat = np.array(sol.y)
     clrdPlt = [[colorizer.normFunc(v) for v in row] for row in solMat]
-    plt.close()
-    fig = plt.figure(figsize=(15, 6))
+    #plt.close()
+
+    if fig == None : fig = plt.figure(figsize=(15, 6)); axes = fig.subplots()
+    else : axes = fig.subplots()
+
     N = len(varNames)
-    pcm = plt.pcolormesh(sol.t, range(N), clrdPlt, cmap=colorizer.cmap, norm=colorizer.norm, shading='nearest')
+    pcm = axes.pcolormesh(sol.t, range(N), clrdPlt, cmap=colorizer.cmap, norm=colorizer.norm, shading='nearest')
     cbar = fig.colorbar(pcm)
     cbar.ax.tick_params(labelsize=12)
     cbar.set_label(label = r"$\phi_i \approx 0$ -> черный; $\phi_i \in (0, \pi)$ -> серый; $\phi_i \approx pi$ -> белый", size=12) 
-    plt.gca().set_yticks(0.5 + np.arange(N))
-    plt.gca().set_yticklabels([projNone.label(var) for var in varNames], fontsize=14)
+    axes.set_yticks(0.5 + np.arange(N))
+    axes.set_yticklabels([projNone.label(var) for var in varNames], fontsize=14)
 
-    plt.gca().tick_params(which="major", width=1.0, labelsize=14)
-    plt.gca().tick_params(which="major", length=5, labelsize=14)
-    plt.xlabel(r'$t$', fontsize=14)
+    axes.tick_params(which="major", width=1.0, labelsize=14)
+    axes.tick_params(which="major", length=5, labelsize=14)
+    axes.set_xlabel(r'$t$', fontsize=14)
 
     plt.title(title)
-    plt.tight_layout()
+    #plt.tight_layout()
     if savePath != None : fig.savefig(savePath)
 
     return fig
 
-def plotActivationDiagram_continuos(sol, varNames = None, cmap = None, title = None, savePath = None):
+def plotActivationDiagram_continuos(sol, fig = None, varNames = None, cmap = None, title = None, savePath = None):
     if varNames == None : varNames = [f"y_{{{p}}}" for p in range(1, len(sol.y) + 1)]
-    if cmap == None : cmap = plt.colormaps['Greys']
+    if cmap == None : cmap = plt.colormaps['Greys_r']
     if title == None : title = r"$\bf{Диаграмма~активности}$"
 
     solMat = np.array(sol.y)
     clrdPlt = [[circleDist(y, 0.0) for y in s]for s in solMat]
-    plt.close()
-    fig = plt.figure(figsize=(15, 6))
+    #plt.close()
+
+    if fig == None : fig = plt.figure(figsize=(15, 6)); axes = fig.subplots()
+    else : axes = fig.subplots()
+
     N = len(varNames)
-    pcm = plt.pcolormesh(sol.t, range(N), clrdPlt, cmap=cmap, shading='nearest', vmin=0.0, vmax=np.pi)
+    pcm = axes.pcolormesh(sol.t, range(N), clrdPlt, cmap=cmap, shading='nearest', vmin=0.0, vmax=np.pi)
     cbar = fig.colorbar(pcm)
     cbar.ax.tick_params(labelsize=12)
-    plt.gca().set_yticks(0.5 + np.arange(N))
-    plt.gca().set_yticklabels([projNone.label(var) for var in varNames], fontsize=14)
 
-    plt.gca().tick_params(which="major", width=1.0, labelsize=14)
-    plt.gca().tick_params(which="major", length=5, labelsize=14)
-    plt.xlabel(r'$t$', fontsize=14)
+    axes.set_yticks(0.5 + np.arange(N))
+    axes.set_yticklabels([projNone.label(var) for var in varNames], fontsize=14)
+
+    axes.tick_params(which="major", width=1.0, labelsize=14)
+    axes.tick_params(which="major", length=5, labelsize=14)
+    axes.set_xlabel(r'$t$', fontsize=14)
 
     plt.title(title)
-    plt.tight_layout()
+    #plt.tight_layout()
     if savePath != None : fig.savefig(savePath)
 
     return fig

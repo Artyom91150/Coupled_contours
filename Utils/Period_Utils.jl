@@ -1,12 +1,23 @@
-function normArctan(x)
+function normArctan(x::Vector{T}) where T <: Real
+    return [normArctan(y) for y in x]
+end
+
+function normArctan(x::T) where T <: Real
     return atan(sin(x), cos(x))
 end
 
-function circleDist(x, y)
+function circleDist(x::Vector{T}, y::Vector{T}) where T <: Real
+    if length(x) != length(y) throw(DimensionMismatch) end
+    return [circleDist(x[i], y[i]) for i = 1:length(x)]
+end
+
+function circleDist(x::T, y::T) where T <: Real
     x = normArctan(x)
     y = normArctan(y)
     return min(abs(x - y), 2*pi - abs(x - y))
 end
+
+
 
 function getNorms(sol; skip_points = 0, norm_arg = 2)
     norms = fill(NaN, length(sol.t))
@@ -26,13 +37,19 @@ function getPeriodTime(sol; skip_points = 0, norm_arg = 2)
     return mean([p for p in diff([sol.t[i] for (i, s) in enumerate(sums) if s >= 3]) if p >= 1])
 end
 
-function plotNorms(sol; skip_points = 0, norm_arg = 2, savePath = nothing)
-    fig = plt.figure(figsize=(6, 4))
+function RefinePeriod(trj::Trajectory, t)
+    func = x -> norm(circleDist(trj(trj.solution.t[begin]), trj(trj.solution.t[begin] + x[1])))
+    s = optimize(func, [t])
+    return s#.minimizer[1]
+end
+
+function plotNorms(sol; fig = nothing, skip_points = 0, norm_arg = 2, savePath = nothing)
+    if (fig === nothing) fig = figure(figsize = (8, 4)); ax = fig.gca() else ax = fig.subplots(1, 1) end
     norms = getNorms(sol; skip_points = skip_points, norm_arg = norm_arg)
     plot(sol.t, norms)
-    gca().set_xlabel("t")
-    gca().set_ylabel("log10( || circleDist(y0, yt) || )")
-    plt.title(string(getPeriodTime(sol; skip_points = skip_points, norm_arg = norm_arg)))
+    ax.set_xlabel("t")
+    ax.set_ylabel("log10( || circleDist(y0, yt) || )")
+    ax.set_title("~" * string(getPeriodTime(sol; skip_points = skip_points, norm_arg = norm_arg)))
 
     savePath !== nothing ? fig.savefig(savePath) : nothing
 end
