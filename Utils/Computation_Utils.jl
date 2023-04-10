@@ -110,7 +110,6 @@ function SolveODE(ODE, x_0, time_span; p = [], alg = nothing, trans_time = 0.0, 
 
     # Define callback function
     cb, observer_array = callback === nothing ? (nothing, nothing) : Get_callback(callback, length(x_0))
-    #cb = callback; observer_array = nothing
 
     # Main time process integration
     integration_time = transit_time .+ (trans_time, time_span)
@@ -161,7 +160,7 @@ function (ode::TangentODE)(X, p = [], t = 0.0)
                 Jac * X[ode.ODEDim + 1 + ode.JacDim * i : ode.ODEDim + ode.JacDim * (i + 1)]
     end
 
-    return SVector{ode.ODEDim + ode.JacDim^2}(cat(dX, dW, dims = 1))
+    return SVector{ode.ODEDim + ode.JacDim^2}([dX; dW])
 end
 
 function splitSol(sol::py_sol{T}) where T <: TangentODE
