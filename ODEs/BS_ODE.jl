@@ -78,82 +78,8 @@ struct BS_ODE_Duo <: ODEType
 end
 
 @inbounds function (bs::BS_ODE_Duo)(X, p = [], t = 0.0)
-    Phi = SVector{3, Float64}(X[1:3])
-    Psi = SVector{3, Float64}(X[4:6])
+    Phi = X[1:3]
+    Psi = X[4:6]
 
     return SVector{6}([bs.Forward_ODE(Phi); bs.Backward_ODE(Psi)] + bs.Eps * bs.Couple.([Psi - Phi; Phi - Psi]))
-end
-
-
-
-
-
-##### Synchronization #####
-function GetSyncs(sol::py_sol)
-    return BS_Syncs(sol)
-end
-
-struct BS_Syncs
-    syncs::Vector{Pair}
-    delay::Real
-
-    function BS_Syncs(sol::py_sol)
-        synphase_std = [[std(map(cos, Psi) - map(cos, Phi)) for Psi in sol.y[4:6]] for Phi in sol.y[1:3]]
-        antiphase_std = [[std(map(cos, Psi) - map(x -> cos(x + pi), Phi)) for Psi in sol.y[4:6]] for Phi in sol.y[1:3]]
-        if minimum(synphase_std[1]) < minimum(antiphase_std[1])
-            delay = 0.0
-            syncs = [Pair(i, argmin(s)) for (i, s) in enumerate(synphase_std)]
-        else 
-            delay = pi
-            syncs = [Pair(i, argmin(s)) for (i, s) in enumerate(antiphase_std)]
-        end
-        new(syncs, delay)
-    end
-    function BS_Syncs(syncs::Vector{Pair}, delay::Real)
-        new(syncs, delay)
-    end
-
-    function Base.show(io::IO, s::BS_Syncs)
-        println(io, "Synchronization: $(["phi_$(sync[1]) => psi_$(sync[2])" for sync in s.syncs]) with delay: $(s.delay)")
-    end
-    
-    function (s::BS_Syncs)(Phi)
-        return [Phi[sync[2]] + s.delay for sync in s.syncs]
-    end
-end
-
-
-
-
-
-
-##### Reduced Bick system #####
-struct BS_ODE_Red <: ODEType
-    BS_ODE::BS_ODE_Sngl
-    Couple::Function
-    Syncs::BS_Syncs
-    Eps::Real
-
-    function BS_ODE_Red(p::Dict{String, T}, Couple::String, Syncs::BS_Syncs)  where T<:Real
-        BS_ODE_Red(p["K"], p["r"], p["a2"], p["a4"], p["Eps"], AnonFunc(Couple), Syncs)
-    end
-    function BS_ODE_Red(p::Dict{String, T}, Couple::Function, Syncs::BS_Syncs)  where T<:Real
-        BS_ODE_Red(p["K"], p["r"], p["a2"], p["a4"], p["Eps"], Couple, Syncs)
-    end
-    function BS_ODE_Red(K::T, r::T, a2::T, a4::T, Eps::T, Couple::Function, Syncs::BS_Syncs)  where T<:Real
-        new(BS_ODE_Sngl(K, r, a2, a4), Couple, Syncs, Eps)
-    end
-
-    function Base.show(io::IO, bs::BS_ODE_Red)
-        println(io, "[BS_ODE::$(typeof(bs.BS_ODE))]:\n$(bs.BS_ODE)")
-        println(io, "[Syncs::$(typeof(bs.Syncs))]:\n$(bs.Syncs)")
-        println(io, "[Eps::$(typeof(bs.Eps))]: $(bs.Eps)")
-        println(io, "[Couple::$(typeof(bs.Couple))]: $(bs.Couple)")
-    end
-end
-
-function (bs::BS_ODE_Red)(X, p = [], t = 0.0)
-    Y = bs.Syncs(X)
-    dX = bs.BS_ODE(X, p, t) + bs.Eps * [bs.Couple(p) for p in X - Y]
-    return SVector{3}(dX)
 end
