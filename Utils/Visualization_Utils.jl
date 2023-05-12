@@ -1,10 +1,41 @@
-using PyCall
+#using PyCall
 
-pushfirst!(PyVector(pyimport("sys")."path"), "")
-MU = pyimport("Utils.Graphics_Utils")
-mpc = pyimport("matplotlib.colors")
-gridspec = pyimport("matplotlib.gridspec")
+#pushfirst!(PyVector(pyimport("sys")."path"), "")
+#MU = pyimport("Utils.Graphics_Utils")
+#mpc = pyimport("matplotlib.colors")
+#gridspec = pyimport("matplotlib.gridspec")
 
+#font_family = "times"
+#font_family = "georgia"
+font_family = "arial"
+#font_family = "tahoma"
+#font_family = "verdana"
+#font_family = "sans"
+#font_family = "impact"
+#font_family = "courier"
+#font_family = "lucida"
+
+default(titlefont = (20, font_family), guidefont = (16, font_family), tickfont = (10, font_family))
+
+function MakeLabels(::Nothing; proj_label = identity, dims = 1)
+    return MakeLabels("y"; proj_label, dims)
+end
+
+function MakeLabels(label::String; proj_label = identity, dims = 1)
+    return [latexstring(proj_label(label * "_$i")) for i in 1 : dims]
+end
+
+function MakeLabels(labels::Vector{String}; proj_label = identity, dims = 1)
+    if length(labels) != dims @warn "labels dimension mismatch." end
+    return [latexstring(proj_label(l)) for l in labels]
+end
+
+function set_margin!(plotattributes; scale = 1.0)
+    plotattributes[:left_margin] = 10Plots.Measures.mm * scale
+    plotattributes[:right_margin] = 5Plots.Measures.mm * scale
+    plotattributes[:top_margin] = 2Plots.Measures.mm * scale
+    plotattributes[:bottom_margin] = 2Plots.Measures.mm * scale
+end
 
 #=
 struct TimeSeries
@@ -125,7 +156,7 @@ end
     ax_lims = (1.2 * minimum(minimum.(y)), 1.2* maximum(maximum.(y)))
 
     # set up properties for all subplots
-    if enable_margin set_margin!(plotattributes) end
+    if enable_margin set_margin!(plotattributes; scale = 0.5) end
     linewidth := get(plotattributes, :linewidth, 3)
     size := get(plotattributes, :size, (800, 800))
     legend := get(plotattributes, :legend, :none)
@@ -165,7 +196,7 @@ end
                 subplot := i
                 
                 markeralpha := get(plotattributes, :markeralpha, :true)
-                markercolor := get(plotattributes, :markercolor, :auto)
+                markercolor := palette(get(plotattributes, :markercolor, :auto))[2]
                 markersize := get(plotattributes, :markersize, 6.0)
                 markerstrokewidth := get(plotattributes, :markerstrokewidth, 0.0)
 
@@ -201,6 +232,8 @@ struct ReturnTime
     end
 end
 =#
+
+
 
 @userplot ReturnTime
 
@@ -301,6 +334,7 @@ end
 
         # Colorbar properties
         colorbar_tickfontsize := 40
+        color := :grays
 
         # Data for visualization
         sol.t, var_labels, z
@@ -308,7 +342,7 @@ end
 end
 
 
-
+#=
 struct Eigens
     projFunc::Union{Function, Nothing}
     title::Union{String, Nothing}
@@ -333,7 +367,7 @@ end
 function plotEigens(sol; fig = nothing,
                         savePath = nothing,
                         projFunc = identity,
-                        title = L"$\bf{Собственные~числа~матрицы~W}$",
+                        title = latexify("\bf{Собственные~числа~матрицы~W}"),
                         plotKwargs = Dict())
     if (fig === nothing) fig = figure(figsize = (8, 4)); ax = fig.gca() else ax = fig.subplots(1, 1) end
 
@@ -345,8 +379,8 @@ function plotEigens(sol; fig = nothing,
     end
     ax.plot([sol.t[begin], sol.t[end]], [0.0, 0.0], color = "black", ls = "--", alpha = 0.5)
 
-    ax.set_xlabel(L"t", fontsize=16)
-    ax.set_ylabel(L"λ_i", fontsize=16)
+    ax.set_xlabel(latexify("t"), fontsize=16)
+    ax.set_ylabel(latexify("λ_i"), fontsize=16)
 
     ax.set_title(title)
     if savePath !== nothing  fig.savefig(savePath) end
@@ -363,8 +397,53 @@ function plotText(str; fig = nothing,
     ax.set_axis_off()
     ax.text(0, 0, str)
 end
+=#
 
+@userplot EigensPlot
 
+@recipe function f(ep::EigensPlot; enable_margin = true)
+    if length(ep.args) != 1 || !(typeof(ep.args[1]) <: py_sol) 
+        error("ReturnTime should be given py_sol object.  Got: $(typeof(ep.args))")
+    else
+        sol = ep.args[1]
+    end
+
+    # Data preprocessing
+    eigs = [abs.(eig) .+ 1e-15 for eig in getTanEigens(sol)]
+
+    # set up properties for plot
+    size := get(plotattributes, :size, (800, 400))
+    legend := get(plotattributes, :legend, :none)
+    framestyle := get(plotattributes, :framestyle, :box)
+    yscale := :log10
+
+    if enable_margin set_margin!(plotattributes) end
+
+    # X axis properties
+    xguide := "\$t\$"
+
+    # Y axis properties
+    yguide := "\$λ\$"
+
+    @series begin
+        seriestype := :scatter
+
+        markeralpha := get(plotattributes, :markeralpha, :true)
+        markercolor := get(plotattributes, :markercolor, :auto)
+        markersize := get(plotattributes, :markersize, 1.0)
+        markerstrokewidth := get(plotattributes, :markerstrokewidth, 0.0)
+
+        # Data for visualization
+        sol.t, eigs
+    end
+
+    @series begin
+        seriestype := :hline
+        color := :black
+        linestyle := :dash
+        [1.0]
+    end
+end
 
 
 
