@@ -2,7 +2,11 @@ using PyCall
 
 pushfirst!(PyVector(pyimport("sys")."path"), "")
 MU = pyimport("Utils.Graphics_Utils")
+mpc = pyimport("matplotlib.colors")
+gridspec = pyimport("matplotlib.gridspec")
 
+
+#=
 struct TimeSeries
     projFunc::Union{Any, Nothing}
     varNames::Union{Vector, Nothing}
@@ -27,10 +31,53 @@ struct TimeSeries
         MU.plotTimeSeries(sol, fig = fig, savePath = savePath, projFunc = p.projFunc, varNames = p.varNames, title = p.title, plotKwargs = p.plotKwargs)
     end
 end
+=#
+
+@userplot TimeSeries
+
+@recipe function f(ts::TimeSeries; var_labels = nothing, proj_func = identity, proj_label = identity, enable_margin = true)
+    if length(ts.args) != 1 || !(typeof(ts.args[1]) <: py_sol) 
+        error("Time Series should be given py_sol object.  Got: $(typeof(ts.args))")
+    else
+        sol = ts.args[1]
+    end
+
+    var_labels = MakeLabels(var_labels; proj_label, dims = length(sol.y))
+
+    # set up properties for all subplots
+    linewidth := get(plotattributes, :linewidth, 3)
+    size := get(plotattributes, :size, (800, 800))
+    legend := get(plotattributes, :legend, :none)
+    framestyle := get(plotattributes, :framestyle, :box)
+    layout := (length(sol.y), 1)
+
+    if enable_margin set_margin!(plotattributes) end
+    
+    for (i, y) in enumerate(sol.y)
+        # X axis properties
+        xguide := ifelse(i == length(sol.y), "\$t\$", "")
+
+        # Y axis properties
+        yguide := var_labels[i]
+
+        # Other axes properties
+        left_margin := (50, :px)
+        right_margin := (50, :px)
+
+        # set up properties for current subplot
+        @series begin
+            seriestype := :path
+            subplot := i
+            
+            # Data for visualization
+            sol.t, proj_func.(sol.y[i])
+        end
+    end
+end
 
 
 
-
+#=
 struct Poincare
     projFunc::Union{Any, Nothing}
     varNames::Union{Vector, Nothing}
@@ -60,10 +107,77 @@ struct Poincare
         MU.plotPoincare(sol, p.varPairs, fig = fig, savePath = savePath, projFunc = p.projFunc, varNames = p.varNames, showEvents = p.showEvents, title = p.title, plotKwargs = p.plotKwargs)
     end
 end
+=#
+
+@userplot Poincare
+
+@recipe function f(p::Poincare; var_labels = nothing, proj_func = identity, proj_label = identity, enable_events = false, enable_margin = true)
+    if length(p.args) != 2 || !(typeof(p.args[1]) <: py_sol)  || !(typeof(p.args[2]) <: Matrix{Tuple{Int64, Int64}})
+        error("Poincare should be given py_sol object and matrix with variables pairs (Matrix{Tuple{Int64, Int64}}).  Got: $(typeof(p.args))")
+    else
+        sol = p.args[1]
+        var_pairs = p.args[2]
+    end
+
+    # Data preprocessing
+    var_labels = MakeLabels(var_labels; proj_label, dims = length(sol.y))
+    y = [proj_func.(y) for y in sol.y]
+    ax_lims = (1.2 * minimum(minimum.(y)), 1.2* maximum(maximum.(y)))
+
+    # set up properties for all subplots
+    if enable_margin set_margin!(plotattributes) end
+    linewidth := get(plotattributes, :linewidth, 3)
+    size := get(plotattributes, :size, (800, 800))
+    legend := get(plotattributes, :legend, :none)
+    framestyle := get(plotattributes, :framestyle, :box)
+    layout := size(var_pairs)
+
+
+    #link := :none
+    aspect_ratio := :equal
+
+    for (i, pair) in enumerate(var_pairs)
+
+        # X axis properties
+        xguide := var_labels[pair[1]]
+
+        # Y axis properties
+        yguide := var_labels[pair[2]]
+
+        # Other axes properties
+        xlims := get(plotattributes, :xlims, ax_lims)
+        ylims := get(plotattributes, :ylims, ax_lims)
+
+        # set up properties for current subplot
+        @series begin
+            seriestype := :path
+            subplot := i
+
+            #alpha := ifelse(enable_events, 0.5, get(plotattributes, :alpha, 1.0))
+            
+            # Data for visualization
+            y[pair[1]], y[pair[2]]
+        end
+
+        if enable_events
+            @series begin
+                seriestype := :scatter
+                subplot := i
+                
+                markeralpha := get(plotattributes, :markeralpha, :true)
+                markercolor := get(plotattributes, :markercolor, :auto)
+                markersize := get(plotattributes, :markersize, 6.0)
+                markerstrokewidth := get(plotattributes, :markerstrokewidth, 0.0)
+
+                proj_func.(sol.y_events[1][:, pair[1]]), proj_func.(sol.y_events[1][:, pair[2]])
+            end
+        end
+    end
+end
 
 
 
-
+#=
 struct ReturnTime
     normFunc::Union{Any, Nothing}
     title::Union{String, Nothing}
@@ -86,10 +200,49 @@ struct ReturnTime
         MU.plotReturnTime(sol, fig = fig, savePath = savePath, normFunc = p.normFunc, title = p.title, plotKwargs = p.plotKwargs)
     end
 end
+=#
+
+@userplot ReturnTime
+
+@recipe function f(rt::ReturnTime; enable_margin = true)
+    if length(rt.args) != 1 || !(typeof(rt.args[1]) <: py_sol) 
+        error("ReturnTime should be given py_sol object.  Got: $(typeof(rt.args))")
+    else
+        sol = rt.args[1]
+    end
+
+    # Data preprocessing
+    diffs = ifelse(length(sol.t_events[1]) > 2, sol.t_events[1][2 : end] - sol.t_events[1][1 : end - 1], [])
+
+    # set up properties for plot
+    size := get(plotattributes, :size, (800, 400))
+    legend := get(plotattributes, :legend, :none)
+    framestyle := get(plotattributes, :framestyle, :box)
+
+    if enable_margin set_margin!(plotattributes) end
+
+    @series begin
+        seriestype := :scatter
+
+        # X axis properties
+        xguide := "\$t\$"
+
+        # Y axis properties
+        yguide := "\$R\$"
+
+        markeralpha := get(plotattributes, :markeralpha, :true)
+        markercolor := get(plotattributes, :markercolor, :auto)
+        markersize := get(plotattributes, :markersize, 6.0)
+        markerstrokewidth := get(plotattributes, :markerstrokewidth, 0.0)
+
+        # Data for visualization
+        sol.t_events[1][2 : end], diffs
+    end
+end
 
 
 
-
+#=
 struct ActivationDiagram
     varNames::Union{Vector, Nothing}
     title::Union{String, Nothing}
@@ -115,7 +268,44 @@ struct ActivationDiagram
         
     end
 end
+=#
 
+@userplot ActivationDiagram
+
+@recipe function f(ad::ActivationDiagram; var_labels = nothing, proj_func = identity, proj_label = identity, enable_margin = true)
+    if length(ad.args) != 1 || !(typeof(ad.args[1]) <: py_sol) 
+        error("ActivationDiagram should be given py_sol object.  Got: $(typeof(ad.args))")
+    else
+        sol = ad.args[1]
+    end
+
+    # Data preprocessing
+    var_labels = MakeLabels(var_labels; proj_label, dims = length(sol.y))
+    z = cos.(reduce(hcat, sol.y))'
+
+    # set up properties for plot
+    size := get(plotattributes, :size, (1200, 600))
+    framestyle := get(plotattributes, :framestyle, :box)
+    ytickfontsize := get(plotattributes, :guidefontsize, default(:yguidefontsize))
+
+    if enable_margin set_margin!(plotattributes) end
+
+    @series begin
+        seriestype := :heatmap
+
+        # X axis properties
+        xguide := "t"
+
+        # Y axis properties
+        
+
+        # Colorbar properties
+        colorbar_tickfontsize := 40
+
+        # Data for visualization
+        sol.t, var_labels, z
+    end
+end
 
 
 
@@ -172,4 +362,51 @@ function plotText(str; fig = nothing,
 
     ax.set_axis_off()
     ax.text(0, 0, str)
+end
+
+
+
+
+
+
+
+function LLE_plot(λs, Eps_mesh)
+    fig = figure(figsize=(8, 4))
+        
+    for i in 1:size(λs)[1]
+        scatter(Eps_mesh, λs[i, :], zorder = 101, s = 5)
+        plot(Eps_mesh, λs[i, :], linewidth = 2, alpha = 0.5)
+    end
+    plot([Eps_mesh[1], Eps_mesh[end]], [0, 0], "k--", alpha = 0.2, zorder = 99)
+    
+    myCmap = mpc.ListedColormap([[1, 0.7, 0.7], [1, 1, 1], [0.7, 1, 0.7]]);
+    ColorVal = zeros(length(Eps_mesh), 2)
+
+    for i = 1 : length(Eps_mesh)
+        if any(i -> abs(i) < 1e-3, λs[:, i])
+            ColorVal[i, :] = ColorVal[i, :] + [1, 1]
+            if any(i -> i > 1e-3, λs[:, i])
+                ColorVal[i, :] = ColorVal[i, :] + [1, 1]
+            end
+        end
+    end
+
+    min_λ = minimum(x -> isnan(x) ? Inf : x, λs)
+    max_λ = maximum(x -> isnan(x) ? -Inf : x, λs)
+    
+    plt.pcolor(Eps_mesh, [1.1 * min_λ, 1.1 * max_λ], ColorVal', cmap = myCmap, vmin=minimum(0), vmax=maximum(2))
+    plot([Eps_mesh[1], Eps_mesh[end]], [max_λ, max_λ], "g--", alpha = 0.4, zorder = 99)
+    
+    xlabel("\$\\varepsilon\$", fontsize=20)
+    ylabel("\$\\lambda\$", fontsize=20)
+
+    fig.tight_layout(pad=0.3)
+    fig.gca().set_xscale("log")
+
+    tick_params(which="major", width=1.0, labelsize=14)
+    tick_params(which="major", length=5, labelsize=14)
+
+    plt.grid(true, alpha = 0.2)
+
+    return fig
 end
