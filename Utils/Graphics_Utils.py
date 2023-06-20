@@ -85,7 +85,7 @@ def plotPoincare(sol, varPairs, /, fig = None, savePath = None, varNames = None,
     
     pairsRows = np.shape(varPairs)[0]
     pairsCols = np.shape(varPairs)[1]
-    figsizeScale = 2
+    figsizeScale = 2.5
     
     if fig == None : fig, axes = plt.subplots(pairsRows, pairsCols, sharex = True, sharey = True, figsize = (figsizeScale * pairsCols + 1, figsizeScale * pairsRows))
     else : axes = fig.subplots(pairsRows, pairsCols, sharex = True, sharey = True)

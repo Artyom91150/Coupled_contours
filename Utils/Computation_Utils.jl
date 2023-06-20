@@ -41,21 +41,22 @@ end
 
 
     ## Result of ODE solution task ##
-mutable struct Trajectory{T}
+mutable struct Trajectory{T, P}
     ## Trajectory info ##
     ODE::T # Function with signature f(dX, u, p, t) or f(u, p, t)
     solution::py_sol
+    p::P
 
     ## Numerical info ##
     alg::Union{Any, Nothing}
     kwargs::Union{Dict{Symbol, Any}, Nothing}
     callback::Union{Function, String, Expr, Nothing, Any}
 
-    function Trajectory(ODE::T, sol::py_sol;
+    function Trajectory(ODE::T, sol::py_sol, p::P;
                         alg = nothing,
                         callback = nothing,
-                        kwargs = nothing) where T <: Union{ODEType, Any}
-        new{T}(ODE, sol, alg, kwargs, callback)
+                        kwargs = nothing) where {T <: Union{ODEType, Any}, P <: AbstractArray}
+        new{T, P}(ODE, sol, p, alg, kwargs, callback)
     end
 
     function Base.show(io::IO, t::Trajectory{T}) where T
@@ -73,7 +74,7 @@ mutable struct Trajectory{T}
         t0 = trj.solution.t[nearest_point_idx]
         u0 = [y[nearest_point_idx] for y in trj.solution.y]
         
-        new_trj = SolveODE(trj.ODE, u0, abs(t - t0); alg = trj.alg, init_time = t0, kwargs = kwargs)
+        new_trj = SolveODE(trj.ODE, u0, abs(t - t0); p = trj.p, alg = trj.alg, init_time = t0, kwargs = kwargs)
         return [y[end] for y in new_trj.solution.y]
     end
 end
@@ -103,7 +104,7 @@ function SolveODE(ODE, x_0, time_span; p = [], alg = nothing, trans_time = 0.0, 
 
     # Transit time process integration
     transit_time = (init_time, init_time + trans_time)
-    x_0 = typeof(x_0) <: SVector ? x_0 : SVector{length(x_0)}(x_0)
+    #x_0 = typeof(x_0) <: SVector ? x_0 : SVector{length(x_0)}(x_0)
 
     prob_julia = ODEProblem{false, SciMLBase.FullSpecialize}(ODE, x_0, transit_time, p)
     sol_julia = solve(prob_julia, alg; save_everystep = false, kwargs...)
@@ -119,7 +120,7 @@ function SolveODE(ODE, x_0, time_span; p = [], alg = nothing, trans_time = 0.0, 
     # Solution convertation into python style
     pysol = py_sol{typeof(ODE)}(sol_julia; event_arr = observer_array)
 
-    return Trajectory(ODE, pysol, alg = alg, callback = callback, kwargs = kwargs)
+    return Trajectory(ODE, pysol, p, alg = alg, callback = callback, kwargs = kwargs)
 end
 
 
@@ -190,4 +191,31 @@ function getTanEigens(tan_sol::py_sol)
     eigens = [eigen(reshape([t[i] for t in tan_sol.y], (tan_size, tan_size))).values for i in range(1, length(tan_sol.t))]
     eigens = [[e[i] for e in eigens] for i in range(1, length(eigens[1]))]
     return eigens
+end
+
+
+
+
+
+
+
+
+function GetLEs(ds, u0, p, Eps_mesh, time_span, trans_time, diffeq)
+    lvDs = CoupledODEs(ds, u0, p; diffeq)
+    λs = Matrix{Float64}(undef, dimension(lvDs), length(Eps_mesh))
+
+    @showprogress "Computing..." for (i, eps) in enumerate(Eps_mesh)
+        set_parameter!(lvDs, 4, eps)
+        set_state!(lvDs, u0)
+        tanDs = TangentDynamicalSystem(lvDs)
+
+        λ = lyapunovspectrum(tanDs, time_span; Ttr = trans_time)
+        if all(isapprox.(ds(get_state(tanDs), current_parameters(lvDs)), 0.0; atol = 1e-8, rtol = 1e-8))
+            #@warn "Trajectory get into equilibria point"
+            λs[:, i] = [NaN for _ in 1:dimension(lvDs)]
+        else
+            λs[:, i] = λ
+        end
+    end
+    return λs
 end
