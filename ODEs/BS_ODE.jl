@@ -122,13 +122,13 @@ function Get_Fast_BS_R(Couple = Couple_Sin_R)
         z1, z2, z3, w1, w2, w3 = X
         A, B, C, Eps = p
     
-        dZ1 = 2(B * tanh(-z1/2.0) - A * tanh(-z2/2.0) + A * tanh(-z3/2.0) + C) + Eps * Couple(z1, w1)
-        dZ2 = 2(A * tanh(-z1/2.0) + B * tanh(-z2/2.0) - A * tanh(-z3/2.0) + C) + Eps * Couple(z2, w2)
-        dZ3 = 2(-A * tanh(-z1/2.0) + A * tanh(-z2/2.0) + B * tanh(-z3/2.0) + C) + Eps * Couple(z3, w3)
+        dZ1 = 2(B * tanh(-z1/2.0) - A * tanh(-z2/2.0) + A * tanh(-z3/2.0) + C) + Eps * 2cosh(z1/2.0) * Couple(z1, w1)
+        dZ2 = 2(A * tanh(-z1/2.0) + B * tanh(-z2/2.0) - A * tanh(-z3/2.0) + C) + Eps * 2cosh(z2/2.0) * Couple(z2, w2)
+        dZ3 = 2(-A * tanh(-z1/2.0) + A * tanh(-z2/2.0) + B * tanh(-z3/2.0) + C) + Eps * 2cosh(z3/2.0) * Couple(z3, w3)
 
-        dW1 = 2(B * tanh(-w1/2.0) + A * tanh(-w2/2.0) - A * tanh(-w3/2.0) + C) + Eps * Couple(w1, z1)
-        dW2 = 2(-A * tanh(-w1/2.0) + B * tanh(-w2/2.0) + A * tanh(-w3/2.0) + C) + Eps * Couple(w2, z2)
-        dW3 = 2(A * tanh(-w1/2.0) - A * tanh(-w2/2.0) + B * tanh(-w3/2.0) + C) + Eps * Couple(w3, z3)
+        dW1 = 2(B * tanh(-w1/2.0) + A * tanh(-w2/2.0) - A * tanh(-w3/2.0) + C) + Eps * 2cosh(w1/2.0) * Couple(w1, z1)
+        dW2 = 2(-A * tanh(-w1/2.0) + B * tanh(-w2/2.0) + A * tanh(-w3/2.0) + C) + Eps * 2cosh(w2/2.0) * Couple(w2, z2)
+        dW3 = 2(A * tanh(-w1/2.0) - A * tanh(-w2/2.0) + B * tanh(-w3/2.0) + C) + Eps * 2cosh(w3/2.0) * Couple(w3, z3)
 
         return SA[dZ1, dZ2, dZ3, dW1, dW2, dW3]
     end
