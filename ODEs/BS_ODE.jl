@@ -37,11 +37,12 @@ end
 
 
 ##### Couple functions for double Bick system #####
+Couple_dummy(x::String) = "undef couple"
+
 Cos_Couple(x::Float64) = (1.0 - cos(x))/2.0
 Cos_Couple(x::String) = "\\frac{1 - cos($x)}{2}"
 
-
-Sin_Couple(x::Float64) = sin(x)
+Sin_Couple(x::Float64) = sin(x)/2.0
 Sin_Couple(x::String) = "sin($x)"
 
 Exp_Couple(x, k = 10.0, zero = 0.0) = 1.0 / (1.0 + exp(k * cos(x))) - zero
@@ -94,8 +95,6 @@ end
     return SVector{6}([bs.Forward_ODE(Phi); bs.Backward_ODE(Psi)] + bs.Eps * bs.Couple.([Psi - Phi; Phi - Psi]))
 end
 
-
-
 function Get_Fast_BS(Couple)
     @inbounds function BS_ODE_Duo_Fast(X, p, t = 0.0)
         phi1, phi2, phi3, psi1, psi2, psi3 = X
@@ -113,9 +112,18 @@ function Get_Fast_BS(Couple)
     return BS_ODE_Duo_Fast
 end
 
+
+
+
+
+
+
+
+
 Couple_Sin_R(x, y) = tanh(-y/2.0) / cosh(x/2.0) - tanh(-x/2.0) / cosh(y/2.0)
 
 Phi2Z(phi) = 2log(exp(1), tan(phi / 2.0))
+Z2Phi(z) = 2atan(exp(z / 2.0))
 
 function Get_Fast_BS_R(Couple = Couple_Sin_R)
     @inbounds function BS_ODE_Duo_Fast(X, p, t = 0.0)
@@ -129,6 +137,56 @@ function Get_Fast_BS_R(Couple = Couple_Sin_R)
         dW1 = 2(B * tanh(-w1/2.0) + A * tanh(-w2/2.0) - A * tanh(-w3/2.0) + C) + Eps * 2cosh(w1/2.0) * Couple(w1, z1)
         dW2 = 2(-A * tanh(-w1/2.0) + B * tanh(-w2/2.0) + A * tanh(-w3/2.0) + C) + Eps * 2cosh(w2/2.0) * Couple(w2, z2)
         dW3 = 2(A * tanh(-w1/2.0) - A * tanh(-w2/2.0) + B * tanh(-w3/2.0) + C) + Eps * 2cosh(w3/2.0) * Couple(w3, z3)
+
+        return SA[dZ1, dZ2, dZ3, dW1, dW2, dW3]
+    end
+    return BS_ODE_Duo_Fast
+end
+
+
+Couple_Sin_R_2(x, y) = (sinh(x / 2.0) - sinh(y / 2.0)) / cosh(y / 2.0)
+
+Couple_Sin_R_3(x, β) = sin(β) / cosh(x / 2.0) + cos(β) * tanh(x / 2.0)
+
+
+function Get_Fast_BS_R_2()
+
+    Rhs(cur, prev, next, A, B, C) = A * (tanh(next / 2.0) - tanh(prev / 2.0)) - B * tanh(cur / 2.0) + C
+    Couple(x, y) = (sinh(x / 2.0) - sinh(y / 2.0)) / cosh(y / 2.0)
+
+    @inbounds function BS_ODE_Duo_Fast(X, p, t = 0.0)
+        z1, z2, z3, w1, w2, w3 = X
+        A, B, C, Eps = p
+    
+        dZ1 = 2(Rhs(z1, z3, z2, A, B, C) + Eps * Couple(z1, w1))
+        dZ2 = 2(Rhs(z2, z1, z3, A, B, C) + Eps * Couple(z2, w2))
+        dZ3 = 2(Rhs(z3, z2, z1, A, B, C) + Eps * Couple(z3, w3))
+
+        dW1 = 2(Rhs(w1, w3, w2, -A, B, C) + Eps * Couple(w1, z1))
+        dW2 = 2(Rhs(w2, w1, w3, -A, B, C) + Eps * Couple(w2, z2))
+        dW3 = 2(Rhs(w3, w2, w1, -A, B, C) + Eps * Couple(w3, z3))
+
+        return SA[dZ1, dZ2, dZ3, dW1, dW2, dW3]
+    end
+    return BS_ODE_Duo_Fast
+end
+
+function Get_Fast_BS_R_3()
+
+    Rhs(cur, prev, next, A, B, C) = A * (tanh(next / 2.0) - tanh(prev / 2.0)) - B * tanh(cur / 2.0) + C
+    Couple(x, β) = sin(β) / cosh(x / 2.0) + cos(β) * tanh(x / 2.0)
+
+    @inbounds function BS_ODE_Duo_Fast(X, p, t = 0.0)
+        z1, z2, z3, w1, w2, w3 = X
+        A, B, C, Eps, β = p
+    
+        dZ1 = 2(Rhs(z1, z3, z2, A, B, C) + Eps * Couple(w1, β))
+        dZ2 = 2(Rhs(z2, z1, z3, A, B, C) + Eps * Couple(w2, β))
+        dZ3 = 2(Rhs(z3, z2, z1, A, B, C) + Eps * Couple(w3, β))
+
+        dW1 = 2(Rhs(w1, w3, w2, -A, B, C) + Eps * Couple(z1, β))
+        dW2 = 2(Rhs(w2, w1, w3, -A, B, C) + Eps * Couple(z2, β))
+        dW3 = 2(Rhs(w3, w2, w1, -A, B, C) + Eps * Couple(z3, β))
 
         return SA[dZ1, dZ2, dZ3, dW1, dW2, dW3]
     end

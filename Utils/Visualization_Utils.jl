@@ -43,6 +43,8 @@ function getTrigTiks()
     return ([0, pi/4, pi/2, 3*pi/4, pi, 5*pi/4, 3*pi/2, 7*pi/4, 2*pi], [L"0", L"\frac{\pi}{4}", L"\frac{\pi}{2}", L"\frac{3\pi}{4}", L"\pi", L"\frac{5\pi}{4}", L"\frac{3\pi}{2}", L"\frac{7\pi}{4}", L"2\pi"])
 end
 
+makeLabel(x) = permutedims(hcat(x))
+
 projCos(x::Float64) = cos(x)
 projCos(x::String) = "\\cos{$x}"
 
