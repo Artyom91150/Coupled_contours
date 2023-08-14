@@ -23,7 +23,7 @@ struct py_sol{T<:Any}
     function py_sol{T}(py_sol_t::Vector{S}, py_sol_y::Vector{Vector{S}},
                         py_sol_t_events::Vector{Vector{S}} = [Vector{S}(undef, 0)],
                         py_sol_y_events::Vector{Matrix{S}} = [Matrix{S}(undef, 0, 0)],
-                        py_sol_retcode::Union{String, Nothing} = nothing) where {T <: Union{ODEType, Any}, S <: Float64}
+                        py_sol_retcode::Union{String, Nothing} = nothing) where {T <: Union{Any}, S <: Float64}
         new{T}(py_sol_t, py_sol_y, py_sol_t_events, py_sol_y_events, py_sol_retcode)
     end
 
@@ -55,7 +55,7 @@ mutable struct Trajectory{T, P}
     function Trajectory(ODE::T, sol::py_sol, p::P;
                         alg = nothing,
                         callback = nothing,
-                        kwargs = nothing) where {T <: Union{ODEType, Any}, P <: AbstractArray}
+                        kwargs = nothing) where {T <: Union{Any}, P <: AbstractArray}
         new{T, P}(ODE, sol, p, alg, kwargs, callback)
     end
 
@@ -137,17 +137,17 @@ end
 
 
 
-mutable struct TangentODE <: ODEType
-    ODE::Union{Function, ODEType}
-    Jacobian::Union{Function, ODEType}
+mutable struct TangentODE
+    ODE::Union{Function}
+    Jacobian::Union{Function}
     ODEDim::Int
     JacDim::Int
 
-    function TangentODE(ODE::Union{Function, ODEType}, ODEDim::Int)
+    function TangentODE(ODE::Union{Function}, ODEDim::Int)
         Jacobian = z -> jacobian(x -> ODE(x, [], 0.0), z)
         new(ODE, Jacobian, ODEDim, ODEDim)
     end
-    function TangentODE(ODE::Union{Function, ODEType}, custom_jacobian::Union{Function, ODEType}, ODEDim::Int, JacDim::Int)
+    function TangentODE(ODE::Union{Function}, custom_jacobian::Union{Function}, ODEDim::Int, JacDim::Int)
         new(ODE, custom_jacobian, ODEDim, JacDim)
     end
 end

@@ -1,5 +1,5 @@
 ##### Single Bick system #####
-struct BS_ODE_Sngl <: ODEType
+struct BS_ODE_Sngl
     K::Float64
     r::Float64
     a2::Float64
@@ -22,14 +22,14 @@ struct BS_ODE_Sngl <: ODEType
     end
 end
 
-@inbounds function (bs::BS_ODE_Sngl)(X, p = [], t = 0.0)
+@inbounds function (bs::BS_ODE_Sngl)(X::T, p, t = 0.0) where T
     phi1, phi2, phi3 = X
     A, B, C = bs.P
 
     dX1 = sin(phi1) * (A * (cos(phi3) - cos(phi2)) + B * cos(phi1) + C)
     dX2 = sin(phi2) * (A * (cos(phi1) - cos(phi3)) + B * cos(phi2) + C)
     dX3 = sin(phi3) * (A * (cos(phi2) - cos(phi1)) + B * cos(phi3) + C)
-    return SA[dX1, dX2, dX3]
+    return T([dX1, dX2, dX3])
 end
 
 
@@ -60,7 +60,7 @@ end
 
 
 ##### Double coupled Bick system #####
-struct BS_ODE_Duo <: ODEType
+struct BS_ODE_Duo
     Forward_ODE::BS_ODE_Sngl
     Backward_ODE::BS_ODE_Sngl
     
@@ -88,7 +88,7 @@ struct BS_ODE_Duo <: ODEType
     end
 end
 
-@inbounds function (bs::BS_ODE_Duo)(X, p = [], t = 0.0)
+@inbounds function (bs::BS_ODE_Duo)(X::T, p = [], t = 0.0) where T
     Phi = X[1:3]
     Psi = X[4:6]
 
@@ -96,7 +96,7 @@ end
 end
 
 function Get_Fast_BS(Couple)
-    @inbounds function BS_ODE_Duo_Fast(X, p, t = 0.0)
+    @inbounds function BS_ODE_Duo_Fast(X::T, p, t = 0.0) where T
         phi1, phi2, phi3, psi1, psi2, psi3 = X
         A, B, C, Eps = p
     
@@ -107,7 +107,7 @@ function Get_Fast_BS(Couple)
         dPsi1 = sin(psi1) * (-A * (cos(psi3) - cos(psi2)) + B * cos(psi1) + C) + Eps * Couple(phi1 - psi1)
         dPsi2 = sin(psi2) * (-A * (cos(psi1) - cos(psi3)) + B * cos(psi2) + C) + Eps * Couple(phi2 - psi2)
         dPsi3 = sin(psi3) * (-A * (cos(psi2) - cos(psi1)) + B * cos(psi3) + C) + Eps * Couple(phi3 - psi3)
-        return SA[dPhi1, dPhi2, dPhi3, dPsi1, dPsi2, dPsi3]
+        return T([dPhi1, dPhi2, dPhi3, dPsi1, dPsi2, dPsi3])
     end
     return BS_ODE_Duo_Fast
 end

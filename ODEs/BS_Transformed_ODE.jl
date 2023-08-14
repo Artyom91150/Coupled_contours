@@ -26,7 +26,7 @@ function Get_Fast_BS_F()
         return sech(y / 2.0) * sinh(x / 2.0) - tanh(y / 2.0)
     end
 
-    @inbounds function BS_ODE_Duo_Fast(X, p, t = 0.0)
+    @inbounds function BS_ODE_Duo_Fast(X::T, p, t = 0.0) where T
         z1, z2, z3, w1, w2, w3 = X
         A, B, C, Eps = p
     
@@ -36,7 +36,7 @@ function Get_Fast_BS_F()
         dW = Population_Rhs(X[4:6], -A, B, C)
         dW .-= Eps .* Couple.(X[4:6], X[1:3])
 
-        return SVector{6}([dZ; dW])
+        return T([dZ; dW])
     end
     return BS_ODE_Duo_Fast
 end
@@ -63,9 +63,9 @@ function Get_Fast_BS_R()
         return sin(β) / cosh(x / 2.0) + cos(β) * tanh(x / 2.0)
     end
 
-    @inbounds function BS_ODE_Duo_Fast(X, p, t = 0.0)
+    @inbounds function BS_ODE_Duo_Fast(X::T, p, t = 0.0) where T
         z1, z2, z3, w1, w2, w3 = X
-        A, B, C, Eps = p
+        A, B, C, Eps, β = p
     
         dZ = Population_Rhs(X[1:3], A, B, C)
         dZ .-= Eps .* Couple.(X[4:6], β)
@@ -73,14 +73,14 @@ function Get_Fast_BS_R()
         dW = Population_Rhs(X[4:6], -A, B, C)
         dW .-= Eps .* Couple.(X[1:3], β)
 
-        return SVector{6}([dZ; dW])
+        return T([dZ; dW])
     end
     return BS_ODE_Duo_Fast
 end
 
 
 function Get_Fast_BS_R1()
-    @inbounds function BS_ODE_Duo_Fast(X, p, t = 0.0)
+    @inbounds function BS_ODE_Duo_Fast(X::T, p, t = 0.0) where T
         phi1, phi2, phi3, psi1, psi2, psi3 = X
         A, B, C, Eps, β = p
     
@@ -91,6 +91,6 @@ function Get_Fast_BS_R1()
         dPsi1 = sin(psi1) * (-A * (cos(psi3) - cos(psi2)) + B * cos(psi1) + C - Eps * cos(β + phi1))
         dPsi2 = sin(psi2) * (-A * (cos(psi1) - cos(psi3)) + B * cos(psi2) + C - Eps * cos(β + phi2))
         dPsi3 = sin(psi3) * (-A * (cos(psi2) - cos(psi1)) + B * cos(psi3) + C - Eps * cos(β + phi3))
-        return SA[dPhi1, dPhi2, dPhi3, dPsi1, dPsi2, dPsi3]
+        return T([dPhi1, dPhi2, dPhi3, dPsi1, dPsi2, dPsi3])
     end
 end
