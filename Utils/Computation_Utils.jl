@@ -2,8 +2,8 @@
 struct py_sol{T<:Any}
     t::Vector{Float64}
     y::Vector{Vector{Float64}}
-    t_events::Vector{Vector{Float64}}
-    y_events::Vector{Matrix{Float64}}
+    t_events::Union{Vector{Vector{Float64}}, Any}
+    y_events::Union{Vector{Matrix{Float64}}, Any}
     retcode::Union{String, Nothing}
 
     function py_sol{T}(sol::ODESolution; event_arr::Union{MySavedValues, Nothing} = nothing) where T
@@ -107,10 +107,19 @@ function SolveODE(ODE, x_0, time_span; p = [], alg = nothing, trans_time = 0.0, 
     #x_0 = typeof(x_0) <: SVector ? x_0 : SVector{length(x_0)}(x_0)
 
     prob_julia = ODEProblem{false, SciMLBase.FullSpecialize}(ODE, x_0, transit_time, p)
-    sol_julia = solve(prob_julia, alg; save_everystep = false, kwargs...)
+    if trans_time != 0.0
+        sol_julia = solve(prob_julia, alg; save_everystep = false, kwargs...)
+    else
+        sol_julia = solve(prob_julia, alg; save_everystep = false)
+    end
 
     # Define callback function
-    cb, observer_array = callback === nothing ? (nothing, nothing) : Get_callback(callback, length(x_0))
+    if(typeof(callback) <: Function)
+        cb, observer_array = callback === nothing ? (nothing, nothing) : Get_callback(callback, length(x_0))
+    else
+        cb = callback
+        observer_array = nothing
+    end
 
     # Main time process integration
     integration_time = transit_time .+ (trans_time, time_span)
