@@ -1,3 +1,9 @@
+module BS_Transformed_ODE
+
+export Get_Fast_BS_F, Get_Fast_BS_R, Get_Fast_BS_R1
+
+export Phi2Z, Z2Phi
+
 # Φ -> Z Transform
 Phi2Z(phi) = 2log(exp(1), tan(phi / 2.0))
 
@@ -93,4 +99,6 @@ function Get_Fast_BS_R1()
         dPsi3 = sin(psi3) * (-A * (cos(psi2) - cos(psi1)) + B * cos(psi3) + C - Eps * cos(β + phi3))
         return T([dPhi1, dPhi2, dPhi3, dPsi1, dPsi2, dPsi3])
     end
+end
+
 end

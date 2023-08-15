@@ -1,3 +1,14 @@
+module Visualization_Utils
+
+export TimeSeries, ReturnTime, ActivationDiagram, EigensPlot, LEPlot
+
+export MakeLabels, set_margin!, getTrigTiks, makeLabel
+
+export projCos, projCos2, projLogCos, projLogSin2
+
+using Plots, LaTeXStrings
+include("Computation_Utils.jl"); using .Computation_Utils
+
 #using PyCall
 
 #pushfirst!(PyVector(pyimport("sys")."path"), "")
@@ -57,14 +68,16 @@ projLogCos(x::String) = L"\pm log_{10} (1 \pm cos(x))"
 projLogSin2(x::Float64) = x > 0 ? -log10(1e-15 + 1 - sin(x/2)) : log10(1e-15 + 1 + sin(x/2))
 projLogSin2(x::String) = L"\pm log_{10} (1 \pm sin(x/2))"
 
+end
 
+using .Visualization_Utils
 
 
 @userplot TimeSeries
 
 @recipe function f(ts::TimeSeries; var_labels = nothing, proj_func = identity, enable_margin = true)
     if length(ts.args) != 1 || !(typeof(ts.args[1]) <: py_sol) 
-        error("Time Series should be given py_sol object.  Got: $(typeof(ts.args))")
+        error("Time Series should be given py_sol object.  Got: $(typeof(ts.args[1]))")
     else
         sol = ts.args[1]
     end
