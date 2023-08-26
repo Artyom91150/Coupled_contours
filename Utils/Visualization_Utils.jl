@@ -2,7 +2,7 @@ module Visualization_Utils
 
 export TimeSeries, ReturnTime, ActivationDiagram, EigensPlot, LEPlot
 
-export MakeLabels, set_margin!, getTrigTiks, makeLabel
+export MakeLabels, set_margin!, getTrigTiks2pi, getTrigTikspi, makeLabel
 
 export projCos, projCos2, projLogCos, projLogSin2
 
@@ -50,8 +50,12 @@ function set_margin!(plotattributes; scale = 1.0)
     
 end
 
-function getTrigTiks()
+function getTrigTiks2pi()
     return ([0, pi/4, pi/2, 3*pi/4, pi, 5*pi/4, 3*pi/2, 7*pi/4, 2*pi], [L"0", L"\frac{\pi}{4}", L"\frac{\pi}{2}", L"\frac{3\pi}{4}", L"\pi", L"\frac{5\pi}{4}", L"\frac{3\pi}{2}", L"\frac{7\pi}{4}", L"2\pi"])
+end
+
+function getTrigTikspi()
+    return ([0, pi/4, pi/2, 3*pi/4, pi], [L"0", L"\frac{\pi}{4}", L"\frac{\pi}{2}", L"\frac{3\pi}{4}", L"\pi"])
 end
 
 makeLabel(x) = permutedims(hcat(x))
@@ -238,7 +242,7 @@ end
 
 @userplot ActivationDiagram
 
-@recipe function f(ad::ActivationDiagram; var_labels = nothing, enable_margin = true, color_eps = nothing)
+@recipe function f(ad::ActivationDiagram; var_labels = nothing, enable_margin = true, color_eps = nothing, proj_func = projCos)
     if length(ad.args) != 1 || !(typeof(ad.args[1]) <: py_sol) 
         error("ActivationDiagram should be given py_sol object.  Got: $(typeof(ad.args))")
     else
@@ -246,7 +250,6 @@ end
     end
 
     # Data preprocessing
-    proj_func = projCos
     var_labels = reverse(MakeLabels(var_labels; proj_func, dims = length(sol.y)))
     z = (1.0 .+ cos.(reduce(hcat, reverse(sol.y)))') ./ 2.0
 
@@ -271,7 +274,8 @@ end
         colorbar_tickfontsize := 1
         if !isnothing(color_eps)
             color := cgrad(get(plotattributes, :color, :greys), [color_eps, 1.0 - color_eps], rev = true, categorical = true, scale = :log)
-            #colorbar_ticks := [0.0, color_eps, 1.0 - color_eps, 1.0]
+        else
+            color := cgrad(get(plotattributes, :color, :greys), rev = true, scale = :log)
         end
         
 
@@ -396,4 +400,29 @@ end
         linestyle := :dash
         zero_line
     end
+end
+
+
+meshgrid(x, y) = (repeat(x, outer=length(y)), repeat(y, inner=length(x)))
+
+function quiver_proj(f, step = pi/12, scale = 0.5)
+    x, y = meshgrid(0:step:(pi + step), 0:step:(pi + step))
+    
+    u = scale .* [i[1] for i in f.(x, y)]
+    v = scale .* [i[2] for i in f.(x, y)]
+
+    c = abs.(u .* v)
+    p = quiver(x, y, quiver=(u, v), line_z=repeat(c, inner=4), size = (600, 600), legend = false, colorbar = :none, xticks = getTrigTikspi(), yticks = getTrigTikspi())
+    hline!([pi], ls = :dash, color = :black, lw = 2.0)
+    vline!([pi], ls = :dash, color = :black, lw = 2.0)
+
+    return p
+end
+
+function quiver_proj_2(ODE, P)
+    return plot(
+            plot(quiver_proj((x, y) -> ODE([x, y, 0.0, 0.0, 0.0, 0.0], P)[[1, 2]]), xguide = L"\phi_1", yguide = L"\phi_2"),
+            plot(quiver_proj((x, y) -> ODE([x, 0.0, 0.0, y, 0.0, 0.0], P)[[1, 4]]), xguide = L"\phi_1", yguide = L"\psi_1"),
+            size = (1200, 600), margin = (5.0, :mm)
+            )
 end

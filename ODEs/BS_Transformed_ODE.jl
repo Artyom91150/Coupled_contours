@@ -4,11 +4,15 @@ export Get_Fast_BS_F, Get_Fast_BS_R, Get_Fast_BS_R1
 
 export Phi2Z, Z2Phi
 
+using LaTeXStrings
+
 # Φ -> Z Transform
-Phi2Z(phi) = 2log(exp(1), tan(phi / 2.0))
+Phi2Z(phi::Float64) = 2log(exp(1), tan(phi / 2.0))
+Phi2Z(phi::String) = L"2log(exp(tan(\frac{%$phi}{2})))"
 
 # Z -> Φ Transform
-Z2Phi(z) = 2atan(exp(z / 2.0))
+Z2Phi(z::Float64) = 2atan(exp(z / 2.0))
+Z2Phi(z::String) = L"2atan(exp(\frac{%$z}{2}))"
 
 
 
@@ -48,6 +52,20 @@ function Get_Fast_BS_F()
 end
 
 
+function f(u::T, p ,t = 0.0) where T
+    x1, x2, x3, y1, y2, y3 = u
+    A, B, C, Eps = p
+
+    dx1 = 2.0 * (A * (tanh(x2 / 2.0) - tanh(x3 / 2.0)) - B * tanh(x1 / 2.0) + C) - Eps * (sech(y1 / 2.0) * sinh(x1 / 2.0) - tanh(y1 / 2.0))
+    dx2 = 2.0 * (A * (tanh(x3 / 2.0) - tanh(x1 / 2.0)) - B * tanh(x2 / 2.0) + C) - Eps * (sech(y2 / 2.0) * sinh(x2 / 2.0) - tanh(y2 / 2.0)) 
+    dx3 = 2.0 * (A * (tanh(x1 / 2.0) - tanh(x2 / 2.0)) - B * tanh(x3 / 2.0) + C) - Eps * (sech(y3 / 2.0) * sinh(x3 / 2.0) - tanh(y3 / 2.0))
+    dy1 = 2.0 * (-A * (tanh(y2 / 2.0) - tanh(y3 / 2.0)) - B * tanh(y1 / 2.0) + C) - Eps * (sech(x1 / 2.0) * sinh(y1 / 2.0) - tanh(x1 / 2.0))
+    dy2 = 2.0 * (-A * (tanh(y3 / 2.0) - tanh(y1 / 2.0)) - B * tanh(y2 / 2.0) + C) - Eps * (sech(x2 / 2.0) * sinh(y2 / 2.0) - tanh(x2 / 2.0))
+    dy3 = 2.0 * (-A * (tanh(y1 / 2.0) - tanh(y2 / 2.0)) - B * tanh(y3 / 2.0) + C) - Eps * (sech(x3 / 2.0) * sinh(y3 / 2.0) - tanh(x3 / 2.0))
+
+    return T([dx1, dx2, dx3, dy1, dy2, dy3])
+end
+
 
 
 
@@ -66,7 +84,7 @@ function Get_Fast_BS_R()
     end
 
     function Couple(x, β) 
-        return sin(β) / cosh(x / 2.0) + cos(β) * tanh(x / 2.0)
+        return 2.0 * (sin(β) / cosh(x / 2.0) + cos(β) * tanh(x / 2.0))
     end
 
     @inbounds function BS_ODE_Duo_Fast(X::T, p, t = 0.0) where T
@@ -74,10 +92,10 @@ function Get_Fast_BS_R()
         A, B, C, Eps, β = p
     
         dZ = Population_Rhs(X[1:3], A, B, C)
-        dZ .-= Eps .* Couple.(X[4:6], β)
+        dZ .+= Eps .* Couple.(X[4:6], β)
 
         dW = Population_Rhs(X[4:6], -A, B, C)
-        dW .-= Eps .* Couple.(X[1:3], β)
+        dW .+= Eps .* Couple.(X[1:3], β)
 
         return T([dZ; dW])
     end

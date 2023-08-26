@@ -67,7 +67,7 @@ module Computation_Utils
         function Trajectory(ODE::T, sol::py_sol, p::P;
                             alg = nothing,
                             callback = nothing,
-                            kwargs = nothing) where {T <: Union{Any}, P <: AbstractArray}
+                            kwargs = nothing) where {T <: Union{Any}, P <: Any}
             new{T, P}(ODE, sol, p, alg, kwargs, callback)
         end
 

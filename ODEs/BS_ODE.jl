@@ -6,6 +6,8 @@ module BS_ODE
 
     export Dummy_Couple, Cos_Couple, Sin_Couple, Exp_Couple, Get_Exp_Couple
 
+    export bick2abc, abc2bick
+
     ##### Single Bick system #####
     struct BS_ODE_Sngl
         K::Float64
@@ -119,5 +121,19 @@ module BS_ODE
         end
         return BS_ODE_Duo_Fast
     end
+
+
+
+
+# Conversion functions from original Bick <K, r, a2, a4> parameters to new <A, B, C>
+function bick2abc(P)
+    K, r, a2, a4 = P
+    return (A = K * cos(a4), B = 4r * cos(2a2), C = -2cos(a2))
+end
+
+function abc2bick(P)
+    A, B, C = P
+    return (K = -A, r = -B/4.0, a2 = pi/2, a4 = pi)
+end
 
 end
