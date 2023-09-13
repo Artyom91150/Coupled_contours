@@ -95,6 +95,7 @@ struct MatcontData
         end
     
         cd("../")
+        cd("../")
         new(curves, parameters)
     end
 end

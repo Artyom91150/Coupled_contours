@@ -105,6 +105,10 @@ module BS_ODE
         return T([bs.Forward_ODE(Phi); bs.Backward_ODE(Psi)] + bs.Eps * bs.Couple.([Psi - Phi; Phi - Psi]))
     end
 
+
+
+    
+
     function Get_Fast_BS(Couple)
         @inbounds function BS_ODE_Duo_Fast(X::T, p, t = 0.0) where T
             phi1, phi2, phi3, psi1, psi2, psi3 = X
@@ -125,15 +129,15 @@ module BS_ODE
 
 
 
-# Conversion functions from original Bick <K, r, a2, a4> parameters to new <A, B, C>
-function bick2abc(P)
-    K, r, a2, a4 = P
-    return (A = K * cos(a4), B = 4r * cos(2a2), C = -2cos(a2))
-end
+    # Conversion functions from original Bick <K, r, a2, a4> parameters to new <A, B, C>
+    function bick2abc(P)
+        K, r, a2, a4, Eps = P
+        return (A = K * cos(a4), B = 4r * cos(2a2), C = -2cos(a2), Eps)
+    end
 
-function abc2bick(P)
-    A, B, C = P
-    return (K = -A, r = -B/4.0, a2 = pi/2, a4 = pi)
-end
+    function abc2bick(P)
+        A, B, C, Eps = P
+        return (K = -A, r = -B/4.0, a2 = pi/2, a4 = pi, Eps)
+    end
 
 end

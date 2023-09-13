@@ -1,6 +1,6 @@
 module BS_Transformed_ODE
 
-export Get_Fast_BS_F, Get_Fast_BS_R, Get_Fast_BS_R1
+export BS_Log, BS_Log_2, BS_Log_β
 
 export Phi2Z, Z2Phi
 
@@ -16,107 +16,57 @@ Z2Phi(z::String) = L"2atan(exp(\frac{%$z}{2}))"
 
 
 
-
-
 ### Transformed double BS system with "NECHESTNAYA" couple < Sin(ϕ - ψ)/2 >
-function Get_Fast_BS_F()
-
-    function Unit_Rhs(cur, prev, next, A, B, C)
-        return 2.0 * (A * (tanh(next / 2.0) - tanh(prev / 2.0)) - B * tanh(cur / 2.0) + C)
-    end
-
-    function Population_Rhs(X, A, B, C)
-        x1, x2, x3 = X
-        return [Unit_Rhs(x1, x3, x2, A, B, C), 
-                Unit_Rhs(x2, x1, x3, A, B, C),
-                Unit_Rhs(x3, x2, x1, A, B, C)]
-    end
-
-    function Couple(x, y) 
-        return sech(y / 2.0) * sinh(x / 2.0) - tanh(y / 2.0)
-    end
-
-    @inbounds function BS_ODE_Duo_Fast(X::T, p, t = 0.0) where T
-        z1, z2, z3, w1, w2, w3 = X
-        A, B, C, Eps = p
-    
-        dZ = Population_Rhs(X[1:3], A, B, C)
-        dZ .-= Eps .* Couple.(X[1:3], X[4:6])
-
-        dW = Population_Rhs(X[4:6], -A, B, C)
-        dW .-= Eps .* Couple.(X[4:6], X[1:3])
-
-        return T([dZ; dW])
-    end
-    return BS_ODE_Duo_Fast
-end
-
-
-function f(u::T, p ,t = 0.0) where T
+@inbounds function BS_Log(u::T, p, t=0.0) where T
     x1, x2, x3, y1, y2, y3 = u
     A, B, C, Eps = p
 
-    dx1 = 2.0 * (A * (tanh(x2 / 2.0) - tanh(x3 / 2.0)) - B * tanh(x1 / 2.0) + C) - Eps * (sech(y1 / 2.0) * sinh(x1 / 2.0) - tanh(y1 / 2.0))
-    dx2 = 2.0 * (A * (tanh(x3 / 2.0) - tanh(x1 / 2.0)) - B * tanh(x2 / 2.0) + C) - Eps * (sech(y2 / 2.0) * sinh(x2 / 2.0) - tanh(y2 / 2.0)) 
-    dx3 = 2.0 * (A * (tanh(x1 / 2.0) - tanh(x2 / 2.0)) - B * tanh(x3 / 2.0) + C) - Eps * (sech(y3 / 2.0) * sinh(x3 / 2.0) - tanh(y3 / 2.0))
-    dy1 = 2.0 * (-A * (tanh(y2 / 2.0) - tanh(y3 / 2.0)) - B * tanh(y1 / 2.0) + C) - Eps * (sech(x1 / 2.0) * sinh(y1 / 2.0) - tanh(x1 / 2.0))
-    dy2 = 2.0 * (-A * (tanh(y3 / 2.0) - tanh(y1 / 2.0)) - B * tanh(y2 / 2.0) + C) - Eps * (sech(x2 / 2.0) * sinh(y2 / 2.0) - tanh(x2 / 2.0))
-    dy3 = 2.0 * (-A * (tanh(y1 / 2.0) - tanh(y2 / 2.0)) - B * tanh(y3 / 2.0) + C) - Eps * (sech(x3 / 2.0) * sinh(y3 / 2.0) - tanh(x3 / 2.0))
+    th1, th2, th3, th4, th5, th6 = tanh.(u)
+    sh1, sh2, sh3, sh4, sh5, sh6 = sinh.(u)
 
-    return T([dx1, dx2, dx3, dy1, dy2, dy3])
+    dx1 = (A * (th2 - th3) - B * th1 + C) - Eps * (sech(y1) * sh1 - th4)
+    dx2 = (A * (th3 - th1) - B * th2 + C) - Eps * (sech(y2) * sh2 - th5) 
+    dx3 = (A * (th1 - th2) - B * th3 + C) - Eps * (sech(y3) * sh3 - th6)
+    dy1 = (-A * (th5 - th6) - B * th4 + C) - Eps * (sech(x1) * sh4 - th1)
+    dy2 = (-A * (th6 - th4) - B * th5 + C) - Eps * (sech(x2) * sh5 - th2)
+    dy3 = (-A * (th4 - th5) - B * th6 + C) - Eps * (sech(x3) * sh6 - th3)
+
+    return T(dx1, dx2, dx3, dy1, dy2, dy3)
 end
 
+### The same system but with x/2
+@inbounds function BS_Log_2(u::T, p, t=0.0) where T
+    u /= 2.0
+    x1, x2, x3, y1, y2, y3 = u
+    A, B, C, Eps = p
 
+    th1, th2, th3, th4, th5, th6 = tanh.(u)
+    sh1, sh2, sh3, sh4, sh5, sh6 = sinh.(u)
+
+    dx1 = 2.0 * (A * (th2 - th3) - B * th1 + C) - Eps * (sech(y1) * sh1 - th4)
+    dx2 = 2.0 * (A * (th3 - th1) - B * th2 + C) - Eps * (sech(y2) * sh2 - th5) 
+    dx3 = 2.0 * (A * (th1 - th2) - B * th3 + C) - Eps * (sech(y3) * sh3 - th6)
+    dy1 = 2.0 * (-A * (th5 - th6) - B * th4 + C) - Eps * (sech(x1) * sh4 - th1)
+    dy2 = 2.0 * (-A * (th6 - th4) - B * th5 + C) - Eps * (sech(x2) * sh5 - th2)
+    dy3 = 2.0 * (-A * (th4 - th5) - B * th6 + C) - Eps * (sech(x3) * sh6 - th3)
+
+    return T(dx1, dx2, dx3, dy1, dy2, dy3)
+end
 
 
 ### Transformed double BS system with "CHESTNAYA" couple < Cos(ψ + β) >
-function Get_Fast_BS_R()
+@inbounds function BS_Log_β(u::T, p, t=0.0) where T
+    phi1, phi2, phi3, psi1, psi2, psi3 = u
+    A, B, C, Eps, β = p
 
-    function Unit_Rhs(cur, prev, next, A, B, C)
-        return 2.0 * (A * (tanh(next / 2.0) - tanh(prev / 2.0)) - B * tanh(cur / 2.0) + C)
-    end
+    dx1 = sin(phi1) * (A * (cos(phi3) - cos(phi2)) + B * cos(phi1) + C - Eps * cos(β + psi1))
+    dx2 = sin(phi2) * (A * (cos(phi1) - cos(phi3)) + B * cos(phi2) + C - Eps * cos(β + psi2))
+    dx3 = sin(phi3) * (A * (cos(phi2) - cos(phi1)) + B * cos(phi3) + C - Eps * cos(β + psi3))
 
-    function Population_Rhs(X, A, B, C)
-        x1, x2, x3 = X
-        return [Unit_Rhs(x1, x3, x2, A, B, C), 
-                Unit_Rhs(x2, x1, x3, A, B, C),
-                Unit_Rhs(x3, x2, x1, A, B, C)]
-    end
-
-    function Couple(x, β) 
-        return 2.0 * (sin(β) / cosh(x / 2.0) + cos(β) * tanh(x / 2.0))
-    end
-
-    @inbounds function BS_ODE_Duo_Fast(X::T, p, t = 0.0) where T
-        z1, z2, z3, w1, w2, w3 = X
-        A, B, C, Eps, β = p
-    
-        dZ = Population_Rhs(X[1:3], A, B, C)
-        dZ .+= Eps .* Couple.(X[4:6], β)
-
-        dW = Population_Rhs(X[4:6], -A, B, C)
-        dW .+= Eps .* Couple.(X[1:3], β)
-
-        return T([dZ; dW])
-    end
-    return BS_ODE_Duo_Fast
-end
-
-
-function Get_Fast_BS_R1()
-    @inbounds function BS_ODE_Duo_Fast(X::T, p, t = 0.0) where T
-        phi1, phi2, phi3, psi1, psi2, psi3 = X
-        A, B, C, Eps, β = p
-    
-        dPhi1 = sin(phi1) * (A * (cos(phi3) - cos(phi2)) + B * cos(phi1) + C - Eps * cos(β + psi1))
-        dPhi2 = sin(phi2) * (A * (cos(phi1) - cos(phi3)) + B * cos(phi2) + C - Eps * cos(β + psi2))
-        dPhi3 = sin(phi3) * (A * (cos(phi2) - cos(phi1)) + B * cos(phi3) + C - Eps * cos(β + psi3))
-    
-        dPsi1 = sin(psi1) * (-A * (cos(psi3) - cos(psi2)) + B * cos(psi1) + C - Eps * cos(β + phi1))
-        dPsi2 = sin(psi2) * (-A * (cos(psi1) - cos(psi3)) + B * cos(psi2) + C - Eps * cos(β + phi2))
-        dPsi3 = sin(psi3) * (-A * (cos(psi2) - cos(psi1)) + B * cos(psi3) + C - Eps * cos(β + phi3))
-        return T([dPhi1, dPhi2, dPhi3, dPsi1, dPsi2, dPsi3])
-    end
+    dy1 = sin(psi1) * (-A * (cos(psi3) - cos(psi2)) + B * cos(psi1) + C - Eps * cos(β + phi1))
+    dy2 = sin(psi2) * (-A * (cos(psi1) - cos(psi3)) + B * cos(psi2) + C - Eps * cos(β + phi2))
+    dy3 = sin(psi3) * (-A * (cos(psi2) - cos(psi1)) + B * cos(psi3) + C - Eps * cos(β + phi3))
+    return T(dx1, dx2, dx3, dy1, dy2, dy3)
 end
 
 end
